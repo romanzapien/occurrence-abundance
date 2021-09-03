@@ -20,11 +20,11 @@ Scripts to solve the model numerically using the master equation.
 
 Scripts are structured in the following way:
 
-`*sc_*.py` contains the source code.
+`sc_*.py` contains the source code.
 
-`*exe_*.py` produces the output.
+`exe_*.py` produces the output.
 
-`*make_*.py` generates data.
+`make_*.py` generates data.
 
 ## Requirements
 
