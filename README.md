@@ -8,19 +8,29 @@ occurrence-abundance pattern of communities.
 
 ## Organization
 
-1. Figures (**occurrence-abundance/figures**).
+1. Data (**occurrence-abundance/data**).
+
+Directory storing empirical data and to store simulated data.
+
+2. Figures (**occurrence-abundance/figures**).
 
 Scripts to produce all the figures.
 
-2. Numerics (**occurrence-abundance/numerics**).
+3. Numerics (**occurrence-abundance/numerics**).
 
 Scripts to solve the model numerically using the master equation.
+
+4. Simulations (**occurrence-abundance/simulation**).
+
+Scripts to simulate communities using the Gillespie algorithm.
 
 ## Usage
 
 Scripts are structured in the following way:
 
 `sc_*.py` contains the source code.
+
+`par_*.py` contains the parameters.
 
 `exe_*.py` produces the output.
 
