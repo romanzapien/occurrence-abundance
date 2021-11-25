@@ -11,10 +11,11 @@ import matplotlib.pyplot as mp
 from matplotlib import colors
 import matplotlib.gridspec as gridspec
 from matplotlib.ticker import LogLocator, NullFormatter
+from pandas import read_excel
 
 import sys
 sys.path.insert(1, '../numerics/')
-from sc_reduction import *
+from sc_recurrence import *
 
 
 ### Figure 1 ###
@@ -76,7 +77,7 @@ def fig1():
 
     mean_freq[-1] = 1
 
-    axes[1].loglog(P, mean_freq, '-', color = 'lightseagreen', label = r'$10^{-3}$')
+    axes[1].loglog(P, mean_freq, '-', color = 'lightseagreen', label = r'$10^{-3}$', linestyle = 'dotted')
     axes[2].semilogx(P, P0, '-', color = 'lightseagreen', label = r'$10^{-3}$')
 
     # Large migration
@@ -97,7 +98,7 @@ def fig1():
 
     mean_freq[-1] = 1
 
-    axes[1].loglog(P, mean_freq, '-', color = 'darkorchid', label = r'$10^{-1}$')
+    axes[1].loglog(P, mean_freq, '-', color = 'darkorchid', label = r'$10^{-1}$', linestyle = (0, (5, 10)))
     axes[2].semilogx(P, P0, '-', color = 'darkorchid', label = r'$10^{-1}$')    
 
     # Annotate
@@ -109,14 +110,15 @@ def fig1():
 
     for ax in [axes[1], axes[2]]:
 
-        ax.set_xlabel('fraction of migrants', fontsize = 16)
         ax.legend(title=r'immigration ($m/N$)')
         ax.set_xlim(7E-4,1.5)
         ax.tick_params(axis='both', direction='in', which='both', right=True, top=True)
-    
+
+    axes[1].set_xlabel('fraction of migrants', fontsize = 16)
     axes[1].set_ylabel('mean frequency', fontsize = 16) 
     axes[1].set_ylim(7E-4,1.5)
     
+    axes[2].set_xlabel('fraction of migrants, \n mean frequency', fontsize = 16)
     axes[2].set_ylabel('occurrence freq.', fontsize = 16)
     axes[2].set_ylim(-0.05,1.05) 
 
@@ -336,7 +338,7 @@ def fig3():
 # Occurrence-abundance pattern in general non-neutral communities.
 def fig4():
     
-    fig, axes = mp.subplots(nrows = 1, ncols = 3, figsize = (11.1, 3.2))
+    fig, axes = mp.subplots(nrows = 2, ncols = 2, figsize = (6.6, 6.9))
 
     N = int(1E3)
     S = 40    
@@ -347,27 +349,51 @@ def fig4():
 
     # Non-neutral points
     
-    data = np.load('data/5C.npz')
+    data_sim = np.load('../data/5C.npz')  
     
-    P0_nneutral = data['P0_nneutral']
+    P0_nneutral = data_sim['P0_nneutral']
     
-    mean_freq_nneutral = data['mean_freq_nneutral']
-        
-    axes[0].semilogx(mean_freq_nneutral, P0_nneutral, '.', color = 'black')
+    mean_freq_nneutral = data_sim['mean_freq_nneutral']
+            
+    axes[0,0].semilogx(mean_freq_nneutral, P0_nneutral, '.', color = 'black')
     
-    # Fig 4B and Fig 4C
+    ## Fig 4B
+    
+    data = read_excel('../data/4B.xlsx', sheet_name=0, header=0, index_col=0)
+    [S, samples] = data.shape
+    N = data.sum(0).unique()[0]
+    
+    occurrence_freq = (data>0).sum(1) / samples
+    mean_freq = (data / N).sum(1) / samples
+    
+    axes[0,1].semilogx(mean_freq, occurrence_freq, '.', color = 'purple', label = 'C. elegans', alpha = 0.4)
+
+    axes[0,1].text(0.8, 0.15, 'C. elegans', color = 'purple', horizontalalignment='center', verticalalignment='center', transform = axes[0,1].transAxes, fontstyle = 'italic')
+    
+    data = read_excel('../data/4B.xlsx', sheet_name=1, header=0, index_col=0)
+    [S, samples] = data.shape
+    N = data.sum(0).unique()[0]
+    
+    occurrence_freq = (data>0).sum(1) / samples
+    mean_freq = (data / N).sum(1) / samples
+    
+    axes[0,1].semilogx(mean_freq, occurrence_freq, '.', color = 'orange', label = 'compost', alpha = 0.4)
+    
+    axes[0,1].text(0.2, 0.85, 'compost', color = 'orange', horizontalalignment='center', verticalalignment='center', transform = axes[0,1].transAxes)
+
+    # Fig 4C and Fig 4D
         
     S = 6
-    p = [0.33443333, 0.00168333, 0.12375, 0.08033333, 0.4176, 0.0422]
-    gR = [1.97227108, 1.13511873, 1.0345976, 1.07541209, 0.78716513, 1.31372745]
-    dR = [1.00512998, 0.82321306, 1.00487796, 1.00530296, 0.94770017, 0.84279409]
+    p = np.array([0.33443333, 0.00168333, 0.12375, 0.08033333, 0.4176, 0.0422])
+    gR = np.array([0.93815818, 1.03693635, 0.82649531, 1.0933327, 1.04066052, 0.80158416])
+    dR = np.array([1.00512998, 0.82321306, 1.00487796, 1.00530296, 0.94770017, 0.84279409])
     gr = np.ones(2)
     dr = np.ones(2)
     focal_type = 0
     
     P = np.logspace(-4,0,50)
     
-    ## Fig 4B
+    ## Fig 4C
     
     m = 1E-3 * N
     
@@ -383,7 +409,7 @@ def fig4():
         P0_neutral[p_ == P] = prob_occurrence(prob)
         mean_freq_neutral[p_ == P] = mean_abundance(prob, N) / N
                     
-    axes[1].semilogx(mean_freq_neutral, P0_neutral, color = 'black')
+    axes[1,0].semilogx(mean_freq_neutral, P0_neutral, color = 'black')
     
     # Neutral points
 
@@ -399,22 +425,18 @@ def fig4():
         P0_neutral[i] = prob_occurrence(prob)
         mean_freq_neutral[i] = mean_abundance(prob, N) / N
                 
-    axes[1].semilogx(mean_freq_neutral, P0_neutral, '.', color = '#4778F7')
+    axes[1,0].semilogx(mean_freq_neutral, P0_neutral, '.', color = '#4778F7')
 
     # Non-neutral points
-        
-    P0_nneutral = np.zeros(S)
-    mean_freq_nneutral = np.zeros(S)
     
-    for i in range(S):
-                                        
-        P_ni_nneutral, n_j_nneutral = reduction_prob_dist(m, N, p, gR, dR, S, i)
-
-        P0_nneutral[i] = prob_occurrence(P_ni_nneutral)
-        mean_freq_nneutral[i] = mean_abundance(P_ni_nneutral, N) / N
+    data = np.load('../data/4C.npz')  
+    
+    P0_nneutral = data['P0_nneutral']
+    
+    mean_freq_nneutral = data['mean_freq_nneutral']
                 
-    axes[1].semilogx(mean_freq_nneutral, P0_nneutral, '.', color = 'black')
-    
+    axes[1,0].semilogx(mean_freq_nneutral, P0_nneutral, '.', color = 'black')
+            
     # Assumption from data
     
     P0_assumed = np.zeros(S)
@@ -429,22 +451,22 @@ def fig4():
         P0_assumed[i] = prob_occurrence(prob)
         mean_freq_assumed[i] = mean_abundance(prob, N) / N
         
-    axes[1].semilogx(mean_freq_assumed, P0_assumed, '.', color = '#FFB000')
+    axes[1,0].semilogx(mean_freq_assumed, P0_assumed, '.', color = '#FFB000')
     
     # Differences btw points
     
     for i in range(S):
         
-        axes[1].annotate('', xy = [mean_freq_nneutral[i], P0_nneutral[i]], xytext = [mean_freq_neutral[i], P0_neutral[i]], color = '#4778F7', arrowprops=dict(arrowstyle="-|>", connectionstyle="arc3", color = '#4778F7'))
-        axes[1].annotate('', xy = [mean_freq_nneutral[i], P0_nneutral[i]], xytext = [mean_freq_assumed[i], P0_assumed[i]], color = '#FFB000', arrowprops=dict(arrowstyle="-|>", connectionstyle="arc3", color = '#FFB000'))  
+        axes[1,0].annotate('', xy = [mean_freq_nneutral[i], P0_nneutral[i]], xytext = [mean_freq_neutral[i], P0_neutral[i]], color = '#4778F7', arrowprops=dict(arrowstyle="-|>", connectionstyle="arc3", color = '#4778F7'))
+        axes[1,0].annotate('', xy = [mean_freq_nneutral[i], P0_nneutral[i]], xytext = [mean_freq_assumed[i], P0_assumed[i]], color = '#FFB000', arrowprops=dict(arrowstyle="-|>", connectionstyle="arc3", color = '#FFB000'))  
         
     ss_assumed = sum(np.sqrt((mean_freq_nneutral - mean_freq_assumed)**2 + (P0_nneutral - P0_assumed)**2)**2)
     ss_real = sum(np.sqrt((mean_freq_nneutral - mean_freq_neutral)**2 + (P0_nneutral - P0_neutral)**2)**2)
     
-    axes[1].text(0.32, 0.8, 'sum of sq. = %.3f'%ss_assumed, color = '#FFB000', horizontalalignment='center', verticalalignment='center', transform = axes[1].transAxes)
-    axes[1].text(0.32, 0.9, 'sum of sq. = %.3f'%ss_real, color = '#4778F7', horizontalalignment='center', verticalalignment='center', transform = axes[1].transAxes)
+    axes[1,0].text(0.33, 0.8, 'sum of sq. = %.2f'%ss_assumed, color = '#FFB000', horizontalalignment='center', verticalalignment='center', transform = axes[1,0].transAxes)
+    axes[1,0].text(0.33, 0.9, 'sum of sq. = %.2f'%ss_real, color = '#4778F7', horizontalalignment='center', verticalalignment='center', transform = axes[1,0].transAxes)
     
-    ## Fig 4C
+    ## Fig 4D
     
     m = 1E-1 * N
         
@@ -460,7 +482,7 @@ def fig4():
         P0_neutral[p_ == P] = prob_occurrence(prob)
         mean_freq_neutral[p_ == P] = mean_abundance(prob, N) / N
             
-    axes[2].semilogx(mean_freq_neutral, P0_neutral, color = 'black')
+    axes[1,1].semilogx(mean_freq_neutral, P0_neutral, color = 'black')
     
     # Neutral points
 
@@ -476,21 +498,17 @@ def fig4():
         P0_neutral[i] = prob_occurrence(prob)
         mean_freq_neutral[i] = mean_abundance(prob, N) / N
         
-    axes[2].semilogx(mean_freq_neutral, P0_neutral, '.', color = '#4778F7')
+    axes[1,1].semilogx(mean_freq_neutral, P0_neutral, '.', color = '#4778F7')
 
     # Non-neutral points
-        
-    P0_nneutral = np.zeros(S)
-    mean_freq_nneutral = np.zeros(S)
     
-    for i in range(S):
-                                   
-        P_ni_nneutral, n_j_nneutral = reduction_prob_dist(m, N, p, gR, dR, S, i)
-
-        P0_nneutral[i] = prob_occurrence(P_ni_nneutral)
-        mean_freq_nneutral[i] = mean_abundance(P_ni_nneutral, N) / N
+    data = np.load('../data/4D.npz')  
+    
+    P0_nneutral = data['P0_nneutral']
+    
+    mean_freq_nneutral = data['mean_freq_nneutral']
                 
-    axes[2].semilogx(mean_freq_nneutral, P0_nneutral, '.', color = 'black')
+    axes[1,1].semilogx(mean_freq_nneutral, P0_nneutral, '.', color = 'black')
     
     # Assumption from data
     
@@ -506,42 +524,51 @@ def fig4():
         P0_assumed[i] = prob_occurrence(prob)
         mean_freq_assumed[i] = mean_abundance(prob, N) / N
         
-    axes[2].semilogx(mean_freq_assumed, P0_assumed, '.', color = '#FFB000')
+    axes[1,1].semilogx(mean_freq_assumed, P0_assumed, '.', color = '#FFB000')
     
     # Differences btw points
     
     for i in range(S):
           
-        axes[2].annotate('', xy = [mean_freq_nneutral[i], P0_nneutral[i]], xytext = [mean_freq_neutral[i], P0_neutral[i]], color = '#4778F7', arrowprops=dict(arrowstyle="-|>", connectionstyle="arc3", color = '#4778F7'))
-        axes[2].annotate('', xy = [mean_freq_nneutral[i], P0_nneutral[i]], xytext = [mean_freq_assumed[i], P0_assumed[i]], color = '#FFB000', arrowprops=dict(arrowstyle="-|>", connectionstyle="arc3", color = '#FFB000'))
+        axes[1,1].annotate('', xy = [mean_freq_nneutral[i], P0_nneutral[i]], xytext = [mean_freq_neutral[i], P0_neutral[i]], color = '#4778F7', arrowprops=dict(arrowstyle="-|>", connectionstyle="arc3", color = '#4778F7'))
+        axes[1,1].annotate('', xy = [mean_freq_nneutral[i], P0_nneutral[i]], xytext = [mean_freq_assumed[i], P0_assumed[i]], color = '#FFB000', arrowprops=dict(arrowstyle="-|>", connectionstyle="arc3", color = '#FFB000'))
     
     ss_assumed = sum(np.sqrt((mean_freq_nneutral - mean_freq_assumed)**2 + (P0_nneutral - P0_assumed)**2)**2)
     ss_real = sum(np.sqrt((mean_freq_nneutral - mean_freq_neutral)**2 + (P0_nneutral - P0_neutral)**2)**2)
     
-    axes[2].text(0.68, 0.1, 'sum of sq. = %.3f'%ss_assumed, color = '#FFB000', horizontalalignment='center', verticalalignment='center', transform = axes[2].transAxes)
-    axes[2].text(0.68, 0.2, 'sum of sq. = %.3f'%ss_real, color = '#4778F7', horizontalalignment='center', verticalalignment='center', transform = axes[2].transAxes)
-    
+    axes[1,1].text(0.67, 0.1, 'sum of sq. = %.2f'%ss_assumed, color = '#FFB000', horizontalalignment='center', verticalalignment='center', transform = axes[1,1].transAxes)
+    axes[1,1].text(0.67, 0.2, 'sum of sq. = %.2f'%ss_real, color = '#4778F7', horizontalalignment='center', verticalalignment='center', transform = axes[1,1].transAxes)
+
     # Annotate
 
-    fig.subplots_adjust(wspace=0.4)
+    fig.subplots_adjust(wspace=0.4, hspace=0.5)
 
-    for ax in [axes[0], axes[1], axes[2]]:
+    for ax in [axes[0,0], axes[0,1], axes[1,0], axes[1,1]]:
     
         ax.set_xlabel('mean frequency', fontsize = 16)    
         ax.set_ylabel('occurrence freq.', fontsize = 16)
-        ax.set_xlim(7E-5,1.5)
         ax.set_ylim(-0.05,1.05)
         ax.tick_params(axis='both', direction='in', which='both', right=True, top=True)
-        ax.xaxis.set_major_locator(LogLocator(base=10,numticks=6))
         ax.xaxis.set_minor_locator(LogLocator(base=10,subs=np.arange(0.2,1.,0.1),numticks=6))
         ax.xaxis.set_minor_formatter(NullFormatter())
-    
-    axes[0].text(-0.25, 1.03, 'A', transform = axes[0].transAxes, fontsize = 25, fontweight = 'bold')
-    axes[1].text(-0.25, 1.03, 'B', transform = axes[1].transAxes, fontsize = 25, fontweight = 'bold')
-    axes[2].text(-0.25, 1.03, 'C', transform = axes[2].transAxes, fontsize = 25, fontweight = 'bold')
 
-    axes[1].text(0.5, 1.1, 'small immigration', transform = axes[1].transAxes, ha='center', fontsize = 18, fontweight = 'bold')
-    axes[2].text(0.5, 1.1, 'large immigration', transform = axes[2].transAxes, ha='center', fontsize = 18, fontweight = 'bold')
+    axes[0,1].set_xlim(7E-6,1.5)
+    axes[0,1].xaxis.set_major_locator(LogLocator(base=10,numticks=7))
+        
+    for ax in [axes[0,0], axes[1,0], axes[1,1]]:
+        
+        ax.set_xlim(7E-5,1.5)
+        ax.xaxis.set_major_locator(LogLocator(base=10,numticks=6))
+    
+    axes[0,0].text(-0.25, 1.03, 'A', transform = axes[0,0].transAxes, fontsize = 25, fontweight = 'bold')
+    axes[0,1].text(-0.25, 1.03, 'B', transform = axes[0,1].transAxes, fontsize = 25, fontweight = 'bold')
+    axes[1,0].text(-0.25, 1.03, 'C', transform = axes[1,0].transAxes, fontsize = 25, fontweight = 'bold')
+    axes[1,1].text(-0.25, 1.03, 'D', transform = axes[1,1].transAxes, fontsize = 25, fontweight = 'bold')
+
+    axes[0,0].text(0.5, 1.05, 'simulation', transform = axes[0,0].transAxes, ha='center', fontsize = 16, fontweight = 'bold')    
+    axes[0,1].text(0.5, 1.05, 'empirical data', transform = axes[0,1].transAxes, ha='center', fontsize = 16, fontweight = 'bold')
+    axes[1,0].text(0.5, 1.05, 'small immigration', transform = axes[1,0].transAxes, ha='center', fontsize = 16, fontweight = 'bold')
+    axes[1,1].text(0.5, 1.05, 'large immigration', transform = axes[1,1].transAxes, ha='center', fontsize = 16, fontweight = 'bold')
  
     # Save
     
@@ -560,7 +587,7 @@ def fig5():
     
     # Neutral curves (5A, 5B, 5C, 5D)
 
-    P = np.logspace(-4,0,50)
+    P = np.logspace(-6,0,50)
     gr = np.ones(2)
     dr = np.ones(2)
     focal_type = 0
@@ -581,7 +608,7 @@ def fig5():
     
     ## Fig 5A
         
-    data = np.load('data/5A.npz')
+    data = np.load('../data/5A.npz')  
     
     P0_nneutral = data['P0_nneutral']
     
@@ -591,7 +618,7 @@ def fig5():
     
     ## Fig 5B
         
-    data = np.load('data/5B.npz')
+    data = np.load('../data/5B.npz')  
     
     P0_nneutral = data['P0_nneutral']
     
@@ -601,7 +628,7 @@ def fig5():
     
     ## Fig 5C
         
-    data = np.load('data/5C.npz')
+    data = np.load('../data/5C.npz')  
     
     P0_nneutral = data['P0_nneutral']
     
@@ -611,23 +638,30 @@ def fig5():
         
     ## Fig 5D
     
-    data = np.load('data/5D.npz')
+    data = np.load('../data/5D.npz')  
     
     P0_nneutral = data['P0_nneutral']
     
     mean_freq_nneutral = data['mean_freq_nneutral']
         
-    axes[1,1].scatter(mean_freq_nneutral, P0_nneutral, s = 15, c = np.sqrt(abs(1.-data['gR'])**2 + abs(1.-data['dR'])**2), cmap = 'viridis', vmin = 0)
+    im = axes[1,1].scatter(mean_freq_nneutral, P0_nneutral, s = 15, c = np.sqrt(abs(1.-data['gR'])**2 + abs(1.-data['dR'])**2), cmap = 'viridis', vmin = 0)
     
     # Annotate
     
-    fig.subplots_adjust(wspace=0.4, hspace=0.4)
+    fig.subplots_adjust(wspace=0.4, hspace=0.4, right=0.9)
+    
+    cbar_ax = fig.add_axes([0.95, 0.35, 0.02, 0.3])
+    cbar = fig.colorbar(im, cax=cbar_ax)
+    cbar.ax.get_yaxis().set_ticks([])
+    cbar.ax.text(1, 0, '0')
+    cbar.ax.text(1, .75, '0.75')
+    cbar.ax.set_ylabel('non-neutrality')
     
     for ax in [axes[0,0], axes[0,1], axes[1,0], axes[1,1]]:
     
         ax.set_xlabel('mean frequency', fontsize = 16)    
         ax.set_ylabel('occurrence freq.', fontsize = 16)
-        ax.set_xlim(7E-5,1.5)
+        ax.set_xlim(5E-6,1.5)
         ax.set_ylim(-0.05,1.05)
         ax.tick_params(axis='both', direction='in', which='both', right=True, top=True)
         ax.xaxis.set_major_locator(LogLocator(base=10,numticks=6))
@@ -692,7 +726,7 @@ def fig6():
     
     ## Fig 6A
         
-    data = np.load('data/5C.npz')
+    data = np.load('../data/5C.npz') 
     
     P0_nneutral_ref = data['P0_nneutral']
     
@@ -700,13 +734,13 @@ def fig6():
         
     axes00.semilogx(mean_freq_nneutral_ref, P0_nneutral_ref, '.', color = 'black')
     
-    axes00.scatter(mean_freq_nneutral_ref[2], P0_nneutral_ref[2], s=100, facecolors='none', edgecolors='#8E888D', linewidth = 1.5)
+    axes00.scatter(mean_freq_nneutral_ref[11], P0_nneutral_ref[11], s=100, facecolors='none', edgecolors='#8E888D', linewidth = 1.5)
     
-    axes00.scatter(mean_freq_nneutral_ref[14], P0_nneutral_ref[14], s=100, facecolors='none', edgecolors='#FF8917', linewidth = 1.5)
+    axes00.scatter(mean_freq_nneutral_ref[37], P0_nneutral_ref[37], s=100, facecolors='none', edgecolors='#FF8917', linewidth = 1.5)
 
     ## Fig 6B.1
 
-    data = np.load('data/6B.1.npz')
+    data = np.load('../data/6B.1.npz') 
     
     P0_nneutral = data['P0_nneutral']
     
@@ -714,11 +748,11 @@ def fig6():
     
     axes11.scatter(mean_freq_nneutral, P0_nneutral, s=20, c = data['p_change'], cmap = 'viridis', norm=colors.LogNorm(vmin=1E-4, vmax=1))
     
-    axes11.scatter(mean_freq_nneutral_ref[2], P0_nneutral_ref[2], s=80, facecolors='none', edgecolors='#8E888D', linewidth = 1.5)
+    axes11.scatter(mean_freq_nneutral_ref[11], P0_nneutral_ref[11], s=80, facecolors='none', edgecolors='#8E888D', linewidth = 1.5)
         
     ## Fig 6B.2
     
-    data = np.load('data/6B.2.npz')
+    data = np.load('../data/6B.2.npz') 
     
     P0_nneutral = data['P0_nneutral']
     
@@ -726,11 +760,11 @@ def fig6():
     
     axes01.scatter(mean_freq_nneutral, P0_nneutral, s=20, c = data['p_change'], cmap = 'viridis', norm=colors.LogNorm(vmin=1E-4, vmax=1))
     
-    axes01.scatter(mean_freq_nneutral_ref[14], P0_nneutral_ref[14], s=80, facecolors='none', edgecolors='#FF8917', linewidth = 1.5)
+    axes01.scatter(mean_freq_nneutral_ref[37], P0_nneutral_ref[37], s=80, facecolors='none', edgecolors='#FF8917', linewidth = 1.5)
     
     ## Fig 6C.1
     
-    data = np.load('data/6C.1.npz')
+    data = np.load('../data/6C.1.npz') 
     
     P0_nneutral = data['P0_nneutral']
     
@@ -738,11 +772,11 @@ def fig6():
     
     axes12.scatter(mean_freq_nneutral, P0_nneutral, s=20, c = data['gR_change'], cmap = 'coolwarm')
     
-    axes12.scatter(mean_freq_nneutral_ref[2], P0_nneutral_ref[2], s=80, facecolors='none', edgecolors='#8E888D', linewidth = 1.5)
-    
+    axes12.scatter(mean_freq_nneutral_ref[11], P0_nneutral_ref[11], s=80, facecolors='none', edgecolors='#8E888D', linewidth = 1.5)
+
     ## Fig 6C.2
     
-    data = np.load('data/6C.2.npz')
+    data = np.load('../data/6C.2.npz') 
     
     P0_nneutral = data['P0_nneutral']
     
@@ -750,11 +784,12 @@ def fig6():
     
     axes02.scatter(mean_freq_nneutral, P0_nneutral, s=20, c = data['gR_change'], cmap = 'coolwarm')
     
-    axes02.scatter(mean_freq_nneutral_ref[14], P0_nneutral_ref[14], s=80, facecolors='none', edgecolors='#FF8917', linewidth = 1.5)
+    axes02.scatter(mean_freq_nneutral_ref[37], P0_nneutral_ref[37], s=80, facecolors='none', edgecolors='#FF8917', linewidth = 1.5)
+
         
-    ## Fig 6D.1
+    # ## Fig 6D.1
     
-    data = np.load('data/6D.1.npz')
+    data = np.load('../data/6D.1.npz') 
     
     P0_nneutral = data['P0_nneutral']
     
@@ -762,11 +797,11 @@ def fig6():
     
     axes13.scatter(mean_freq_nneutral, P0_nneutral, s=20, c = data['dR_change'], cmap = 'coolwarm_r')
     
-    axes13.scatter(mean_freq_nneutral_ref[2], P0_nneutral_ref[2], s=80, facecolors='none', edgecolors='#8E888D', linewidth = 1.5)
-        
-    ## Fig 6D.2
+    axes13.scatter(mean_freq_nneutral_ref[11], P0_nneutral_ref[11], s=80, facecolors='none', edgecolors='#8E888D', linewidth = 1.5)
+
+    # ## Fig 6D.2
     
-    data = np.load('data/6D.2.npz')
+    data = np.load('../data/6D.2.npz') 
     
     P0_nneutral = data['P0_nneutral']
     
@@ -774,7 +809,7 @@ def fig6():
     
     axes03.scatter(mean_freq_nneutral, P0_nneutral, s=20, c = data['dR_change'], cmap = 'coolwarm_r')
     
-    axes03.scatter(mean_freq_nneutral_ref[14], P0_nneutral_ref[14], s=80, facecolors='none', edgecolors='#FF8917', linewidth = 1.5)
+    axes03.scatter(mean_freq_nneutral_ref[37], P0_nneutral_ref[37], s=80, facecolors='none', edgecolors='#FF8917', linewidth = 1.5)
 
     # Annotate
     
@@ -786,8 +821,8 @@ def fig6():
     cax12.axis('off')
     cax13.axis('off')
     cbar11 = cax11.imshow(np.array([[1E-4, 1]]), norm=colors.LogNorm(vmin=1E-4, vmax=1), cmap='viridis')
-    cbar12 = cax12.imshow(np.array([[0.8, 1.2]]), cmap='coolwarm')
-    cbar13 = cax13.imshow(np.array([[0.8, 1.2]]), cmap='coolwarm_r')
+    cbar12 = cax12.imshow(np.array([[0.75, 1.25]]), cmap='coolwarm')
+    cbar13 = cax13.imshow(np.array([[0.75, 1.25]]), cmap='coolwarm_r')
     cbar11.set_visible(False)
     cbar12.set_visible(False)
     cbar13.set_visible(False)
@@ -796,15 +831,15 @@ def fig6():
     cbar13 = fig.colorbar(cbar13, ax = cax13, orientation = 'horizontal', fraction = 1.)
     
     # Add triangles indicating the values on panel 6A
-    p = data['p']
-    cax11.annotate(r'$\blacktriangledown$', xy = (30 - 13.5 * np.log10(p[2]*1E4),0), color = '#8E888D', fontsize = 14, xycoords = ("axes fraction", "axes fraction"))
-    cax11.annotate(r'$\blacktriangledown$', xy = (30 - 13.5 * np.log10(p[14]*1E4),0), color = '#FF8917', fontsize = 14, xycoords = ("axes fraction", "axes fraction"))
-    gR = data['gR']
-    cax12.annotate(r'$\blacktriangledown$', xy = (30 - 54 * ((gR[2]-0.8)/0.4),0), color = '#8E888D', fontsize = 14, xycoords = ("axes fraction", "axes fraction"))
-    cax12.annotate(r'$\blacktriangledown$', xy = (30 - 54 * ((gR[14]-0.8)/0.4),0), color = '#FF8917', fontsize = 14, xycoords = ("axes fraction", "axes fraction"))
-    dR = data['dR']
-    cax13.annotate(r'$\blacktriangledown$', xy = (30 - 54 * ((dR[2]-0.8)/0.4),0), color = '#8E888D', fontsize = 14, xycoords = ("axes fraction", "axes fraction"))
-    cax13.annotate(r'$\blacktriangledown$', xy = (30 - 54 * ((dR[14]-0.8)/0.4),0), color = '#FF8917', fontsize = 14, xycoords = ("axes fraction", "axes fraction"))
+    p = np.array([0.00038154, 0.00067294, 0.00077313, 0.00084858, 0.00126614, 0.00137603, 0.00170499, 0.00173883, 0.00193053, 0.00216253, 0.00437584, 0.00527042, 0.00728132, 0.00754192, 0.00775608, 0.00803994, 0.01048105, 0.01178707, 0.01260198, 0.01373537, 0.01404538, 0.01485447, 0.01632661, 0.01833767, 0.02257611, 0.02528464, 0.02540005, 0.02571126, 0.02691791, 0.03328889, 0.03412534, 0.03504708, 0.03723251, 0.0373183, 0.0412504, 0.06049704, 0.07532528, 0.07580609, 0.09674053, 0.18218821])
+    cax11.annotate(r'$\blacktriangledown$', xy = (30 - 13.5 * np.log10(p[11]*1E4),0), color = '#8E888D', fontsize = 14, xycoords = ("axes fraction", "axes fraction"))
+    cax11.annotate(r'$\blacktriangledown$', xy = (30 - 13.5 * np.log10(p[37]*1E4),0), color = '#FF8917', fontsize = 14, xycoords = ("axes fraction", "axes fraction"))
+    gR = np.array([1.15442723, 0.85911785, 1.11160448, 1.02066184, 0.92910304, 0.89754369, 0.81035959, 1.0647798, 0.98090045, 1.04132257, 0.85088964, 1.04953219, 1.05582736, 0.82319735, 1.09151151, 1.15998802, 0.82941692, 1.0370813, 0.95696431, 0.99065505, 0.91642347, 1.02392111, 1.02467767, 0.96302918, 1.01826739, 1.04124979, 1.07662959, 1.20783799, 0.97987992, 1.14226125, 1.00054386, 0.94077612, 1.00486504, 0.96320097, 1.14489223, 1.02131939, 0.91426701, 0.88496494, 0.89403731, 1.06832477])
+    cax12.annotate(r'$\blacktriangledown$', xy = (30 - 54 * ((gR[11]-0.75)/0.5),0), color = '#8E888D', fontsize = 14, xycoords = ("axes fraction", "axes fraction"))
+    cax12.annotate(r'$\blacktriangledown$', xy = (30 - 54 * ((gR[37]-0.75)/0.5),0), color = '#FF8917', fontsize = 14, xycoords = ("axes fraction", "axes fraction"))
+    dR = np.array([0.97997334, 0.97178519, 1.01221396, 1.07464284, 0.89822532, 1.05447841, 0.90908804, 0.93517044, 1.11642025, 1.0223452, 0.96517128, 1.00578925, 0.9853043, 0.82862568, 0.98050893, 1.06342287, 1.11187164, 1.11135766, 1.16597829, 1.12204569, 0.96069496, 1.01766923, 0.97712838, 1.07470396, 0.85933591, 1.09789077, 0.94291763, 0.87396482, 0.9675674, 1.19007246, 1.09704941, 0.91754573, 0.88923551, 0.97910369, 1.00315385, 1.01284054, 1.00109989, 0.76639059, 1.0966333, 0.97279744])
+    cax13.annotate(r'$\blacktriangledown$', xy = (30 - 54 * ((dR[11]-0.75)/0.5),0), color = '#8E888D', fontsize = 14, xycoords = ("axes fraction", "axes fraction"))
+    cax13.annotate(r'$\blacktriangledown$', xy = (30 - 54 * ((dR[37]-0.75)/0.5),0), color = '#FF8917', fontsize = 14, xycoords = ("axes fraction", "axes fraction"))
 
     for ax in [axes00, axes01, axes02, axes03, axes11, axes12, axes13]:
         ax.set_xlim(7E-5,1.5)
@@ -842,7 +877,7 @@ def fig6():
 
 
 ### Figure 7 ###
-# Variance and second raw moment of the frequency.     
+# Variance and second moment of the frequency.     
 def fig7():
     
     fig, axes = mp.subplots(nrows = 2, ncols = 2, figsize = (6.6, 6.6))
@@ -877,7 +912,7 @@ def fig7():
             prob = recurrence_prob_dist(m, N, p, gr, dr, focal_type)
     
             mean_freq = sum(prob * abundance/N)  
-            second_central_moment[p_ == P] = sum(prob * (np.arange(N+1)/N - mean_freq)**2)
+            second_central_moment[p_ == P] = sum(prob * (abundance/N - mean_freq)**2)
             second_raw_moment[p_ == P] = sum(prob * (abundance/N)**2)
             
         second_central_moment[second_central_moment == 0] = np.nan
@@ -908,7 +943,7 @@ def fig7():
             prob = recurrence_prob_dist(m, N, p, gr, dr, focal_type)
     
             mean_freq = sum(prob * abundance/N)  
-            second_central_moment[p_ == P] = sum(prob * (np.arange(N+1)/N - mean_freq)**2)
+            second_central_moment[p_ == P] = sum(prob * (abundance/N - mean_freq)**2)
             second_raw_moment[p_ == P] = sum(prob * (abundance/N)**2)
             
         second_central_moment[second_central_moment == 0] = np.nan
@@ -932,7 +967,7 @@ def fig7():
         ax.tick_params(axis='both', direction='in', which='both', right=True, top=True)
         
         if ax == axes[0,0] or ax == axes[1,0]: ax.set_ylabel('frequency variance', fontsize = 16)
-        else: ax.set_ylabel(r'freq. 2$^{nd}$ raw mom.', fontsize = 16)
+        else: ax.set_ylabel(r'freq. 2$^{nd}$ moment', fontsize = 16)
     
     axes[0,0].text(-0.25, 1.03, 'A', transform = axes[0,0].transAxes, fontsize = 25, fontweight = 'bold')
     axes[0,1].text(-0.25, 1.03, 'B', transform = axes[0,1].transAxes, fontsize = 25, fontweight = 'bold')
